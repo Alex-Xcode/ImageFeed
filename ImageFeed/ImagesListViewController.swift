@@ -2,7 +2,7 @@ import UIKit
 
 final class ImagesListViewController: UIViewController {
     @IBOutlet private var tableView: UITableView!
-
+    
     private let photosName = (0..<20).map { "\($0)" }
     
     private lazy var dateFormatter: DateFormatter = {
@@ -30,12 +30,15 @@ extension ImagesListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return photosName.count
     }
-
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let reuseIdentifier = ImagesListCell.reuseIdentifier
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath) as? ImagesListCell else {
+        guard let cell = tableView.dequeueReusableCell(
+            withIdentifier: ImagesListCell.reuseIdentifier,
+            for: indexPath
+        ) as? ImagesListCell else {
             fatalError("Unable to dequeue ImagesListCell")
         }
+        
         configure(cell, at: indexPath)
         return cell
     }
@@ -43,11 +46,14 @@ extension ImagesListViewController: UITableViewDataSource {
 
 extension ImagesListViewController {
     private func configure(_ cell: ImagesListCell, at indexPath: IndexPath) {
-        guard let image = UIImage(named: photosName[indexPath.row]) else { return }
+        let imageName = photosName[indexPath.row]
+        let dateText = dateFormatter.string(from: Date())
+        let isLiked = indexPath.row % 2 == 0
+        let likeImageName = isLiked ? "like_button_on" : "like_button_off"
         
-        cell.configure(with: image,
-                       date: dateFormatter.string(from: Date()),
-                       isLiked: indexPath.row % 2 == 0)
+        cell.cellImage.image = UIImage(named: imageName)
+        cell.dateLabel.text = dateText
+        cell.likeButton.setImage(UIImage(named: likeImageName), for: .normal)
     }
 }
 
