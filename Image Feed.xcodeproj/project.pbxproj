@@ -63,15 +63,15 @@
 			isa = PBXGroup;
 			children = (
 				7D9CFA4228DDEE7F00D971A7 /* AppDelegate.swift */,
-				7D9CFA4B28DDEE8000D971A7 /* Assets.xcassets */,
-				7D3DFB1328DDF696005A13F3 /* ImagesListCell.swift */,
-				7D3DFB1428DDF696005A13F3 /* ImagesListViewController.swift */,
-				7D9CFA5028DDEE8000D971A7 /* Info.plist */,
-				7D9CFA4D28DDEE8000D971A7 /* LaunchScreen.storyboard */,
-				7D9CFA4828DDEE7F00D971A7 /* Main.storyboard */,
 				7D9CFA4428DDEE7F00D971A7 /* SceneDelegate.swift */,
 				8F83109C28E459BD00BA471F /* ProfileViewController.swift */,
+				7D3DFB1328DDF696005A13F3 /* ImagesListCell.swift */,
+				7D3DFB1428DDF696005A13F3 /* ImagesListViewController.swift */,
 				8F83109F28E4D0C300BA471F /* SingleImageViewController.swift */,
+				7D9CFA4828DDEE7F00D971A7 /* Main.storyboard */,
+				7D9CFA4B28DDEE8000D971A7 /* Assets.xcassets */,
+				7D9CFA4D28DDEE8000D971A7 /* LaunchScreen.storyboard */,
+				7D9CFA5028DDEE8000D971A7 /* Info.plist */,
 			);
 			path = "Image Feed";
 			sourceTree = "<group>";
