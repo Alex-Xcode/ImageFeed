@@ -83,11 +83,11 @@ final class SingleImageViewController: UIViewController {
     
     @IBAction private func shareButtonPressed() {
         guard let image else { return }
-        let activityViewController = UIActivityViewController(
-            activityItems: [image],
-            applicationActivities: nil
-        )
-        present(activityViewController, animated: true, completion: nil)
+            let activityViewController = UIActivityViewController(
+                activityItems: [image],
+                applicationActivities: nil
+            )
+            present(activityViewController, animated: true)
     }
 }
 
