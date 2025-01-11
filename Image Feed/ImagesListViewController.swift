@@ -24,6 +24,14 @@ final class ImagesListViewController: UIViewController {
         tableView.rowHeight = UITableView.automaticDimension
         tableView.contentInset = UIEdgeInsets(top: 12, left: 0, bottom: 12, right: 0)
     }
+
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "ShowSingleImageSegue",
+           let destinationVC = segue.destination as? SingleImageViewController,
+           let indexPath = sender as? IndexPath {
+            destinationVC.image = UIImage(named: photosName[indexPath.row])
+        }
+    }
 }
 
 extension ImagesListViewController: UITableViewDataSource {
@@ -42,12 +50,10 @@ extension ImagesListViewController: UITableViewDataSource {
         configure(cell, at: indexPath)
         return cell
     }
-}
 
-extension ImagesListViewController {
     private func configure(_ cell: ImagesListCell, at indexPath: IndexPath) {
         let imageName = photosName[indexPath.row]
-        let dateText = dateFormatter.string(from: currentDate) // Используем предсозданную дату
+        let dateText = dateFormatter.string(from: currentDate)
         let isLiked = indexPath.row % 2 == 0
         let likeImageName = isLiked ? "like_button_on" : "like_button_off"
 
@@ -58,9 +64,12 @@ extension ImagesListViewController {
 }
 
 extension ImagesListViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        performSegue(withIdentifier: "ShowSingleImageSegue", sender: indexPath)
+    }
+
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         guard let image = UIImage(named: photosName[indexPath.row]) else { return 200 }
-
         let padding: CGFloat = 16
         let availableWidth = tableView.bounds.width - padding
         let imageAspectRatio = image.size.height / image.size.width
