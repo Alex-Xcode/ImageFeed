@@ -1,79 +1,95 @@
 import UIKit
 
 final class SingleImageViewController: UIViewController {
-    
-    @IBOutlet private weak var scrollView: UIScrollView!
-    @IBOutlet private weak var imageView: UIImageView!
-    private let shareButton = UIButton()
-    
+        
     var image: UIImage? {
         didSet {
-            guard isViewLoaded else { return }
-            updateImage()
+            guard isViewLoaded, let image else { return }
+            configureImage(image)
+        }
+    }
+        
+    @IBOutlet private weak var scrollView: UIScrollView!
+    @IBOutlet private weak var imageView: UIImageView!
+        
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        setupScrollView()
+        if let image {
+            configureImage(image)
         }
     }
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupUI()
-        updateImage()
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateContentInset()
     }
-    
-    private func setupUI() {
+        
+    private func setupScrollView() {
+        scrollView.delegate = self
         scrollView.minimumZoomScale = 0.1
         scrollView.maximumZoomScale = 1.25
-        scrollView.delegate = self
-        setupShareButton()
     }
     
-    private func setupShareButton() {
-        shareButton.setImage(UIImage(named: "share_icon"), for: .normal)
-        shareButton.addTarget(self, action: #selector(didTapShareButton), for: .touchUpInside)
-        view.addSubview(shareButton)
-        shareButton.translatesAutoresizingMaskIntoConstraints = false
-        
-        NSLayoutConstraint.activate([
-            shareButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            shareButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
-            shareButton.widthAnchor.constraint(equalToConstant: 44),
-            shareButton.heightAnchor.constraint(equalToConstant: 44)
-        ])
-    }
-    
-    private func updateImage() {
-        guard let image = image else { return }
+    private func configureImage(_ image: UIImage) {
         imageView.image = image
         imageView.frame.size = image.size
-        rescaleAndCenterImage()
+        rescaleAndCenterImageInScrollView(image: image)
     }
-    
-    private func rescaleAndCenterImage() {
-        guard let image = image else { return }
-        
+
+    private func rescaleAndCenterImageInScrollView(image: UIImage) {
         let minZoomScale = scrollView.minimumZoomScale
         let maxZoomScale = scrollView.maximumZoomScale
         
-        let hScale = scrollView.bounds.width / image.size.width
-        let vScale = scrollView.bounds.height / image.size.height
-        let scale = min(maxZoomScale, max(minZoomScale, min(hScale, vScale)))
+        view.layoutIfNeeded()
+        
+        let visibleRectSize = scrollView.bounds.size
+        let imageSize = image.size
+        
+        let hScale = visibleRectSize.width / imageSize.width
+        let vScale = visibleRectSize.height / imageSize.height
+        let scale = min(maxZoomScale, max(minZoomScale, max(hScale, vScale)))
         
         scrollView.setZoomScale(scale, animated: false)
+        scrollView.layoutIfNeeded()
         
         let newContentSize = scrollView.contentSize
-        let xOffset = (newContentSize.width - scrollView.bounds.width) / 2
-        let yOffset = (newContentSize.height - scrollView.bounds.height) / 2
-        scrollView.setContentOffset(CGPoint(x: xOffset, y: yOffset), animated: false)
+        let x = (newContentSize.width - visibleRectSize.width) / 2
+        let y = (newContentSize.height - visibleRectSize.height) / 2
+        scrollView.setContentOffset(CGPoint(x: x, y: y), animated: false)
     }
     
-    @objc private func didTapShareButton() {
-        guard let image = image else { return }
-        let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
-        present(activityVC, animated: true, completion: nil)
+    private func updateContentInset() {
+        let horizontalInset = max((scrollView.bounds.width - scrollView.contentSize.width) / 2, 0)
+        let verticalInset = max((scrollView.bounds.height - scrollView.contentSize.height) / 2, 0)
+        
+        scrollView.contentInset = UIEdgeInsets(
+            top: verticalInset,
+            left: horizontalInset,
+            bottom: verticalInset,
+            right: horizontalInset
+        )
+    }
+    
+    @IBAction private func backButtonPressed() {
+        dismiss(animated: true)
+    }
+    
+    @IBAction private func shareButtonPressed() {
+        guard let image else { return }
+        let activityViewController = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+        present(activityViewController, animated: true, completion: nil)
     }
 }
 
 extension SingleImageViewController: UIScrollViewDelegate {
+    
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         return imageView
+    }
+    
+    func scrollViewDidZoom(_ scrollView: UIScrollView) {
+        updateContentInset()
     }
 }
