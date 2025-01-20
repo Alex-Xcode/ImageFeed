@@ -1,17 +1,30 @@
 import UIKit
 
-protocol AuthDelegate: AnyObject {
-    func authDidSucceed(withCode code: String)
+protocol AuthViewControllerDelegate: AnyObject {
+    func authViewController(_ vc: AuthViewController, didAuthenticateWithCode code: String)
 }
 
 final class AuthViewController: UIViewController {
-    private let showWebViewSegue = "ShowWebViewSegue"
-    weak var delegate: AuthDelegate?
+    private let showWebViewSegueIdentifier = "ShowWebView"
+
+    weak var delegate: AuthViewControllerDelegate?
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == showWebViewSegue,
+        if segue.identifier == showWebViewSegueIdentifier,
            let webViewVC = segue.destination as? WebViewViewController {
-            webViewVC.delegate = delegate
+            webViewVC.delegate = self
+        } else {
+            super.prepare(for: segue, sender: sender)
         }
+    }
+}
+
+extension AuthViewController: WebViewViewControllerDelegate {
+    func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
+        delegate?.authViewController(self, didAuthenticateWithCode: code)
+    }
+
+    func webViewViewControllerDidCancel(_ vc: WebViewViewController) {
+        dismiss(animated: true)
     }
 }

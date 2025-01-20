@@ -1,8 +1,17 @@
 import Foundation
 
+enum NetworkError: Error {
+    case invalidURL
+    case invalidResponse
+}
+
 final class OAuth2Service {
+    static let shared = OAuth2Service() // Синглтон
+    
+    private init() {}
+    
     func fetchOAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let url = URL(string: "https://unsplash.com/oauth/token") else {
+        guard let url = URL(string: Constants.TokenURL) else {
             completion(.failure(NetworkError.invalidURL))
             return
         }
@@ -43,16 +52,4 @@ final class OAuth2Service {
             }
         }.resume()
     }
-}
-
-struct OAuthTokenResponseBody: Decodable {
-    let access_token: String
-    let token_type: String
-    let scope: String
-    let created_at: Int
-}
-
-enum NetworkError: Error {
-    case invalidURL
-    case invalidResponse
 }

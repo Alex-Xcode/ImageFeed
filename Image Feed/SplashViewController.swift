@@ -1,8 +1,8 @@
 import UIKit
 
 final class SplashViewController: UIViewController {
-    private let oauth2TokenStorage = OAuth2TokenStorage.shared // Используем синглтон
-    private let showAuthSegue = "ShowAuthSegue"
+    private let oauth2TokenStorage = OAuth2TokenStorage.shared
+    private let showAuthSegueIdentifier = "ShowAuthSegue"
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -13,7 +13,7 @@ final class SplashViewController: UIViewController {
         if oauth2TokenStorage.token != nil {
             switchToMainScreen()
         } else {
-            performSegue(withIdentifier: showAuthSegue, sender: nil)
+            performSegue(withIdentifier: showAuthSegueIdentifier, sender: nil)
         }
     }
 
@@ -23,5 +23,36 @@ final class SplashViewController: UIViewController {
         let tabBarVC = storyboard.instantiateViewController(withIdentifier: "MainTabBarController")
         window.rootViewController = tabBarVC
         window.makeKeyAndVisible()
+    }
+
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == showAuthSegueIdentifier,
+           let navController = segue.destination as? UINavigationController,
+           let authVC = navController.viewControllers.first as? AuthViewController {
+            authVC.delegate = self
+        } else {
+            super.prepare(for: segue, sender: sender)
+        }
+    }
+}
+
+extension SplashViewController: AuthViewControllerDelegate {
+    func authViewController(_ vc: AuthViewController, didAuthenticateWithCode code: String) {
+        dismiss(animated: true) { [weak self] in
+            self?.fetchOAuthToken(code)
+        }
+    }
+
+    private func fetchOAuthToken(_ code: String) {
+        let oauth2Service = OAuth2Service.shared
+        oauth2Service.fetchOAuthToken(code) { [weak self] result in
+            switch result {
+            case .success(let token):
+                print("Token fetched successfully: \(token)")
+                self?.switchToMainScreen()
+            case .failure(let error):
+                print("Error fetching token: \(error.localizedDescription)")
+            }
+        }
     }
 }
