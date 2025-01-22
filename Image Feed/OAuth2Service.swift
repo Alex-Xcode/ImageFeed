@@ -1,17 +1,12 @@
 import Foundation
 
-enum NetworkError: Error {
-    case invalidURL
-    case invalidResponse
-}
-
 final class OAuth2Service {
-    static let shared = OAuth2Service() // Синглтон
-    
+    static let shared = OAuth2Service() // Singleton
+
     private init() {}
-    
+
     func fetchOAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let url = URL(string: Constants.TokenURL) else {
+        guard let url = URL(string: Constants.tokenURL) else {
             completion(.failure(NetworkError.invalidURL))
             return
         }
@@ -19,9 +14,9 @@ final class OAuth2Service {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         let parameters: [String: String] = [
-            "client_id": Constants.AccessKey,
-            "client_secret": Constants.SecretKey,
-            "redirect_uri": Constants.RedirectURI,
+            "client_id": Constants.accessKey,
+            "client_secret": Constants.secretKey,
+            "redirect_uri": Constants.redirectURI,
             "code": code,
             "grant_type": "authorization_code"
         ]
@@ -45,6 +40,7 @@ final class OAuth2Service {
                 }
                 do {
                     let tokenResponse = try JSONDecoder().decode(OAuthTokenResponseBody.self, from: data)
+                    OAuth2TokenStorage.shared.token = tokenResponse.access_token // Используем shared
                     completion(.success(tokenResponse.access_token))
                 } catch {
                     completion(.failure(error))
@@ -52,4 +48,10 @@ final class OAuth2Service {
             }
         }.resume()
     }
+}
+
+
+enum NetworkError: Error {
+    case invalidURL
+    case invalidResponse
 }

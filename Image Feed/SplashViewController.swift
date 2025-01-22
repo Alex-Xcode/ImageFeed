@@ -10,7 +10,7 @@ final class SplashViewController: UIViewController {
     }
 
     private func checkAuth() {
-        if oauth2TokenStorage.token != nil {
+        if let token = oauth2TokenStorage.token, !token.isEmpty {
             switchToMainScreen()
         } else {
             performSegue(withIdentifier: showAuthSegueIdentifier, sender: nil)
@@ -47,12 +47,12 @@ extension SplashViewController: AuthViewControllerDelegate {
         let oauth2Service = OAuth2Service.shared
         oauth2Service.fetchOAuthToken(code) { [weak self] result in
             switch result {
-            case .success(let token):
-                print("Token fetched successfully: \(token)")
+            case .success:
                 self?.switchToMainScreen()
             case .failure(let error):
-                print("Error fetching token: \(error.localizedDescription)")
+                print("Error fetching token: \(error)")
             }
         }
     }
 }
+

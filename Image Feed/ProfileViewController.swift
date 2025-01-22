@@ -9,11 +9,9 @@ final class ProfileViewController: UIViewController {
 
     @IBAction private func didTapLogoutButton() {
         DispatchQueue.global(qos: .userInitiated).async {
-            // Используем синглтон для очистки токена
             OAuth2TokenStorage.shared.token = nil
             
             DispatchQueue.main.async {
-                // Уведомляем пользователя об успешном выходе
                 let alert = UIAlertController(
                     title: "Logged Out",
                     message: "You have been successfully logged out.",
