@@ -1,25 +1,36 @@
 import UIKit
+import Kingfisher
 
 final class ProfileViewController: UIViewController {
-    @IBOutlet private var avatarImageView: UIImageView!
-    @IBOutlet private var nameLabel: UILabel!
-    @IBOutlet private var loginNameLabel: UILabel!
-    @IBOutlet private var descriptionLabel: UILabel!
-    @IBOutlet private var logoutButton: UIButton!
+    private let avatarImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.layer.cornerRadius = 50
+        imageView.clipsToBounds = true
+        return imageView
+    }()
 
-    @IBAction private func didTapLogoutButton() {
-        DispatchQueue.global(qos: .userInitiated).async {
-            OAuth2TokenStorage.shared.token = nil
-            
-            DispatchQueue.main.async {
-                let alert = UIAlertController(
-                    title: "Logged Out",
-                    message: "You have been successfully logged out.",
-                    preferredStyle: .alert
-                )
-                alert.addAction(UIAlertAction(title: "OK", style: .default))
-                self.present(alert, animated: true)
-            }
-        }
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .white
+        setupUI()
+        loadProfileData()
+    }
+
+    private func setupUI() {
+        view.addSubview(avatarImageView)
+        
+        NSLayoutConstraint.activate([
+            avatarImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            avatarImageView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            avatarImageView.widthAnchor.constraint(equalToConstant: 100),
+            avatarImageView.heightAnchor.constraint(equalToConstant: 100)
+        ])
+    }
+
+    private func loadProfileData() {
+        guard let url = URL(string: "https://via.placeholder.com/100") else { return }
+        avatarImageView.kf.setImage(with: url)
+        //print("[Profile] Загружается аватар") 
     }
 }

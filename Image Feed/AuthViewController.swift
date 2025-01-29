@@ -1,29 +1,21 @@
 import UIKit
-
-protocol AuthViewControllerDelegate: AnyObject {
-    func authViewController(_ vc: AuthViewController, didAuthenticateWithCode code: String)
-}
+import SwiftKeychainWrapper
 
 final class AuthViewController: UIViewController {
-    private let showWebViewSegueIdentifier = "ShowWebView"
-    weak var delegate: AuthViewControllerDelegate?
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .white
+        login()
+    }
 
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == showWebViewSegueIdentifier,
-           let webViewVC = segue.destination as? WebViewViewController {
-            webViewVC.delegate = self
+    private func login() {
+        let success = KeychainWrapper.standard.set("mockAuthToken", forKey: "AuthToken")
+        if success {
+            //print("[Auth] Токен сохранён")
         } else {
-            super.prepare(for: segue, sender: sender)
+            //print("[Auth] Ошибка сохранения токена")
         }
-    }
-}
-
-extension AuthViewController: WebViewViewControllerDelegate {
-    func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
-        delegate?.authViewController(self, didAuthenticateWithCode: code)
-    }
-
-    func webViewViewControllerDidCancel(_ vc: WebViewViewController) {
+        
         dismiss(animated: true)
     }
 }
