@@ -1,42 +1,27 @@
 import UIKit
-import SwiftKeychainWrapper
+import ProgressHUD
 
-final class SplashViewController: UIViewController {
-    private let logoImageView: UIImageView = {
-        let imageView = UIImageView(image: UIImage(named: "splash_screen_logo"))
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        return imageView
-    }()
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        view.backgroundColor = .white
-        setupUI()
-        checkAuth()
-    }
-    
-    private func setupUI() {
-        view.addSubview(logoImageView)
+class SplashViewController: UIViewController {
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
         
-        NSLayoutConstraint.activate([
-            logoImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            logoImageView.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-        ])
-    }
+        ProgressHUD.animate()
 
-    private func checkAuth() {
-        if KeychainWrapper.standard.string(forKey: "AuthToken") != nil {
-            //print("[Splash] Токен найден, переходим в приложение")
-            openMainScreen()
+        if let token = OAuth2TokenStorage().token {
+            ProfileService.shared.fetchProfile { _ in
+                DispatchQueue.main.async {
+                    ProgressHUD.dismiss()
+                    self.switchToMainScreen()
+                }
+            }
         } else {
-            //print("[Splash] Токен не найден, показываем экран авторизации") 
+            ProgressHUD.dismiss()
             present(AuthViewController(), animated: true)
         }
     }
     
-    private func openMainScreen() {
-        let tabBarVC = TabBarController()
-        tabBarVC.modalPresentationStyle = .fullScreen
-        present(tabBarVC, animated: true)
+    private func switchToMainScreen() {
+        let tabBarController = TabBarController()
+        UIApplication.shared.windows.first?.rootViewController = tabBarController
     }
 }

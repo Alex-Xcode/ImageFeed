@@ -3,24 +3,24 @@ import UIKit
 final class TabBarController: UITabBarController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupTabs()
+        setupTabBar()
     }
 
-    private func setupTabs() {
+    private func setupTabBar() {
         let imagesListVC = ImagesListViewController()
         imagesListVC.tabBarItem = UITabBarItem(
-            title: "Images",
+            title: "Лента",
             image: UIImage(systemName: "photo.on.rectangle"),
-            selectedImage: UIImage(systemName: "photo.fill.on.rectangle.fill")
+            selectedImage: UIImage(systemName: "photo.on.rectangle.fill")
         )
 
         let profileVC = ProfileViewController()
         profileVC.tabBarItem = UITabBarItem(
-            title: "Profile",
-            image: UIImage(systemName: "person"),
-            selectedImage: UIImage(systemName: "person.fill")
+            title: "Профиль",
+            image: UIImage(systemName: "person.crop.circle"),
+            selectedImage: UIImage(systemName: "person.crop.circle.fill")
         )
 
-        self.viewControllers = [imagesListVC, profileVC]
+        viewControllers = [imagesListVC, profileVC]
     }
 }

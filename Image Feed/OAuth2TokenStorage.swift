@@ -1,28 +1,18 @@
-import Foundation
 import SwiftKeychainWrapper
 
 final class OAuth2TokenStorage {
-    private let key = "AuthToken"
-
+    private let key = "accessToken"
+    
     var token: String? {
         get {
-            let storedToken = KeychainWrapper.standard.string(forKey: key)
-            //print("[OAuth2TokenStorage] Получен токен: \(storedToken ?? "nil")")
-            return storedToken
+            return KeychainWrapper.standard.string(forKey: key)
         }
         set {
-            if let newToken = newValue {
-                _ = KeychainWrapper.standard.set(newToken, forKey: key)
-                //print("[OAuth2TokenStorage] Сохранение токена: \(isSuccess ? "Успешно" : "Ошибка")")
+            if let newValue = newValue {
+                KeychainWrapper.standard.set(newValue, forKey: key)
             } else {
-                _ = KeychainWrapper.standard.removeObject(forKey: key)
-                //print("[OAuth2TokenStorage] Удаление токена: \(removeSuccess ? "Успешно" : "Ошибка")")
+                KeychainWrapper.standard.removeObject(forKey: key)
             }
         }
-    }
-
-    func clearToken() {
-        _ = KeychainWrapper.standard.removeObject(forKey: key)
-        //print("[OAuth2TokenStorage] Токен удалён: \(removeSuccess ? "Успешно" : "Ошибка")") 
     }
 }

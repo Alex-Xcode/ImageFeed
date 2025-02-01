@@ -1,82 +1,64 @@
 import UIKit
-@preconcurrency import WebKit
+import WebKit
+
+protocol WebViewViewControllerDelegate: AnyObject {
+    func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String)
+    func webViewViewControllerDidCancel(_ vc: WebViewViewController)
+}
 
 final class WebViewViewController: UIViewController {
-    private var webView: WKWebView!
-    private let progressView = UIProgressView(progressViewStyle: .default)
-    private var estimatedProgressObservation: NSKeyValueObservation?
-    
+    weak var delegate: WebViewViewControllerDelegate?
+
+    @IBOutlet private var webView: WKWebView!
+    @IBOutlet private var progressView: UIProgressView!
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .white
-        setupWebView()
-        setupProgressView()
-        loadRequest()
-    }
-    
-    private func setupWebView() {
-        let webConfiguration = WKWebViewConfiguration()
-        webView = WKWebView(frame: .zero, configuration: webConfiguration)
-        webView.translatesAutoresizingMaskIntoConstraints = false
+
         webView.navigationDelegate = self
-        view.addSubview(webView)
-        
-        NSLayoutConstraint.activate([
-            webView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-        
-        // Подписываемся на KVO с новым API
-        estimatedProgressObservation = webView.observe(\.estimatedProgress, options: [.new]) { [weak self] _, _ in
-            guard let self = self else { return }
-            self.updateProgress()
-        }
+
+        guard let url = createAuthorizationURL() else { return }
+        let request = URLRequest(url: url)
+        webView.load(request)
     }
-    
-    private func setupProgressView() {
-        progressView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(progressView)
-        
-        NSLayoutConstraint.activate([
-            progressView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            progressView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            progressView.heightAnchor.constraint(equalToConstant: 2)
-        ])
+
+    @IBAction private func didTapBackButton() {
+        delegate?.webViewViewControllerDidCancel(self)
     }
-    
-    private func loadRequest() {
-        guard let url = URL(string: "https://unsplash.com/oauth/authorize") else { return }
-        webView.load(URLRequest(url: url))
-    }
-    
-    private func updateProgress() {
-        progressView.progress = Float(webView.estimatedProgress)
-        progressView.isHidden = webView.estimatedProgress >= 1.0
-        //print("[WebView] Прогресс загрузки: \(webView.estimatedProgress)")
-    }
-    
-    deinit {
-        estimatedProgressObservation = nil
-        //print("[WebView] Контроллер деинициализирован")
+
+    private func createAuthorizationURL() -> URL? {
+        var urlComponents = URLComponents(string: Constants.authorizeURL)
+        urlComponents?.queryItems = [
+            URLQueryItem(name: "client_id", value: Constants.accessKey),
+            URLQueryItem(name: "redirect_uri", value: Constants.redirectURI),
+            URLQueryItem(name: "response_type", value: "code"),
+            URLQueryItem(name: "scope", value: Constants.accessScope)
+        ]
+        return urlComponents?.url
     }
 }
 
 extension WebViewViewController: WKNavigationDelegate {
-    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
-        if let url = navigationResponse.response.url, url.absoluteString.contains("code=") {
-            let queryItems = URLComponents(string: url.absoluteString)?.queryItems
-            let code = queryItems?.first(where: { $0.name == "code" })?.value
-            
-            if let code = code {
-                //print("[WebView] Получен код авторизации: \(code)")
-                NotificationCenter.default.post(name: Notification.Name("AuthCodeReceived"), object: nil, userInfo: ["code": code])
-            }
-            dismiss(animated: true)
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        if let code = extractCode(from: navigationAction) {
+            delegate?.webViewViewController(self, didAuthenticateWithCode: code)
+            decisionHandler(.cancel)
+        } else {
+            decisionHandler(.allow)
         }
-        decisionHandler(.allow)
+    }
+
+    private func extractCode(from navigationAction: WKNavigationAction) -> String? {
+        guard let url = navigationAction.request.url,
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              components.path == "/oauth/authorize/native",
+              let code = components.queryItems?.first(where: { $0.name == "code" })?.value
+        else { return nil }
+
+        return code
     }
 }
-

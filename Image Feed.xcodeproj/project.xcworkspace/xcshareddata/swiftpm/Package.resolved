@@ -1,15 +1,6 @@
 {
-  "originHash" : "c0f4fbbce90b119d85f5717b53f5dec00b0010f87430fa292e4937d5fe16c627",
+  "originHash" : "7168593a2210f2f832238cb23cdec0711eeee4c694cef7e08a42fa8430701d08",
   "pins" : [
-    {
-      "identity" : "jgprogresshud",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/JonasGessner/JGProgressHUD",
-      "state" : {
-        "revision" : "78d7cd35f1d90ff74fd82e486f2cbe4b24be8cf9",
-        "version" : "2.2.0"
-      }
-    },
     {
       "identity" : "kingfisher",
       "kind" : "remoteSourceControl",

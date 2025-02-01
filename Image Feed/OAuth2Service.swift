@@ -1,90 +1,66 @@
 import Foundation
+import ProgressHUD
 
-final class OAuth2Service {
-    static let shared = OAuth2Service()
+final class OAuthService {
+    static let shared = OAuthService()
     
-    private let tokenStorage = OAuth2TokenStorage()
-    private var task: URLSessionTask?
-    private var lastCode: String?
-    private let urlSession = URLSession.shared
+    private var currentTask: URLSessionDataTask?
+    private let session = URLSession.shared
+    private let storage = OAuth2TokenStorage()
     
-    private enum NetworkError: Error {
-        case requestFailed
-        case invalidResponse
-        case decodingError
-    }
+    func fetchOAuthToken(with code: String, completion: @escaping (Result<String, Error>) -> Void) {
+        currentTask?.cancel()
+        ProgressHUD.animate()
 
-    struct OAuthTokenResponseBody: Codable {
-        let accessToken: String
-
-        enum CodingKeys: String, CodingKey {
-            case accessToken = "access_token"
-        }
-    }
-    
-    func fetchOAuthToken(code: String, completion: @escaping (Result<String, Error>) -> Void) {
-        // Проверка на гонки запросов
-        if lastCode == code {
-            return
-        }
-        lastCode = code
-        
-        task?.cancel()  // Отменяем предыдущий запрос, если он еще выполняется
-        
-        guard let request = authTokenRequest(code: code) else {
-            completion(.failure(NetworkError.requestFailed))
-            return
-        }
-        
-        let task = urlSession.dataTask(with: request) { [weak self] data, response, error in
+        let request = makeAuthRequest(with: code)
+        currentTask = session.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
+                ProgressHUD.dismiss()
+                
                 if let error = error {
                     completion(.failure(error))
                     return
                 }
-                
-                guard let data = data,
-                      let httpResponse = response as? HTTPURLResponse,
-                      httpResponse.statusCode == 200 else {
+                guard let data = data, let token = self.parseToken(from: data) else {
                     completion(.failure(NetworkError.invalidResponse))
                     return
                 }
-                
-                do {
-                    let decoder = JSONDecoder()
-                    let tokenResponse = try decoder.decode(OAuthTokenResponseBody.self, from: data)
-                    let token = tokenResponse.accessToken
-                    
-                    self?.tokenStorage.token = token  // Сохраняем токен в Keychain
-                    completion(.success(token))
-                } catch {
-                    completion(.failure(NetworkError.decodingError))
-                }
+                self.storage.token = token
+                completion(.success(token))
             }
         }
-        
-        self.task = task
-        task.resume()
+        currentTask?.resume()
     }
 
-    private func authTokenRequest(code: String) -> URLRequest? {
-        guard let url = URL(string: "https://unsplash.com/oauth/token") else { return nil }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-
-        let parameters: [String: String] = [
-            "client_id": Constants.accessKey,
-            "client_secret": Constants.secretKey,
-            "redirect_uri": Constants.redirectURI,
-            "code": code,
-            "grant_type": "authorization_code"
+    private func makeAuthRequest(with code: String) -> URLRequest {
+        let urlString = "https://unsplash.com/oauth/token"
+        var components = URLComponents(string: urlString)!
+        components.queryItems = [
+            URLQueryItem(name: "client_id", value: Constants.accessKey),
+            URLQueryItem(name: "client_secret", value: Constants.secretKey),
+            URLQueryItem(name: "redirect_uri", value: "urn:ietf:wg:oauth:2.0:oob"),
+            URLQueryItem(name: "code", value: code),
+            URLQueryItem(name: "grant_type", value: "authorization_code")
         ]
-
-        let bodyString = parameters.map { "\($0.key)=\($0.value)" }.joined(separator: "&")
-        request.httpBody = bodyString.data(using: .utf8)
-
+        
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         return request
+    }
+
+    private func parseToken(from data: Data) -> String? {
+        struct Response: Codable {
+            let access_token: String
+        }
+        
+        let decoder = JSONDecoder()
+        do {
+            let response = try decoder.decode(Response.self, from: data)
+            return response.access_token
+        } catch {
+            print("[OAuthService]: Ошибка декодирования токена - \(error)")
+            return nil
+        }
     }
 }
