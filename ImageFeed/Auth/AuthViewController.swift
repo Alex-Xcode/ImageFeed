@@ -10,17 +10,61 @@ final class AuthViewController: UIViewController {
     
     // MARK: - Properties
     
-    private let showWebViewSegueIdentifier = "ShowWebView"
+    private lazy var logo: UIImageView = {
+        let logo = UIImageView()
+        logo.image = UIImage(named: "UnsplashLogo")
+        logo.translatesAutoresizingMaskIntoConstraints = false
+        return logo
+    }()
+    
+    private lazy var startAuthButton: UIButton = {
+        let startAuthButton = UIButton()
+        startAuthButton.setTitle("Войти", for: .normal)
+        startAuthButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 17)
+        startAuthButton.setTitleColor(.ypBlack, for: .normal)
+        startAuthButton.backgroundColor = .ypWhite
+        startAuthButton.layer.masksToBounds = true
+        startAuthButton.layer.cornerRadius = 16
+        startAuthButton.addTarget(
+            self,
+            action: #selector(startAuthButtonPressed),
+            for: .touchUpInside
+        )
+        startAuthButton.translatesAutoresizingMaskIntoConstraints = false
+        return startAuthButton
+    }()
+    
     weak var delegate: AuthViewControllerDelegate?
     
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        configureBackButton()
+        setUpScreen()
     }
     
     // MARK: - Private Methods
+    
+    private func setUpScreen() {
+        view.backgroundColor = .ypBlack
+        [logo, startAuthButton].forEach { view.addSubview($0) }
+        setUpConstraints()
+        configureBackButton()
+    }
+    
+    private func setUpConstraints() {
+        NSLayoutConstraint.activate([
+            startAuthButton.heightAnchor.constraint(equalToConstant: 48),
+            startAuthButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            startAuthButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            startAuthButton.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -90),
+            
+            logo.widthAnchor.constraint(equalToConstant: 60),
+            logo.heightAnchor.constraint(equalToConstant: 60),
+            logo.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            logo.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+    }
     
     private func configureBackButton() {
         let backImage = UIImage(named: "blackBackward")?.withRenderingMode(.alwaysOriginal)
@@ -52,26 +96,18 @@ final class AuthViewController: UIViewController {
             return
         }
     }
-}
-
-// MARK: - Extensions
-
-extension AuthViewController {
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == showWebViewSegueIdentifier {
-            guard
-                let viewController = segue.destination as? WebViewViewController
-            else {
-                assertionFailure("Invalid segue destination")
-                return
-            }
-            
-            viewController.delegate = self
-        } else {
-            super.prepare(for: segue, sender: sender)
+    
+    @objc private func startAuthButtonPressed() {
+        let webView = WebViewViewController()
+        webView.delegate = self
+        if let navigationController {
+            navigationController.modalPresentationStyle = .fullScreen
+            navigationController.pushViewController(webView, animated: true)
         }
     }
 }
+
+// MARK: - Extensions
 
 extension AuthViewController: WebViewViewControllerDelegate {
     
@@ -79,16 +115,14 @@ extension AuthViewController: WebViewViewControllerDelegate {
         UIBlockingProgressHUD.show()
         
         OAuth2Service.shared.fetchOAuthToken(code: code) { [weak self] result in
-            
             UIBlockingProgressHUD.dismiss()
-            
+            guard let self else { return }
             switch result {
             case .success(let receivedToken):
-                guard let self else { return }
                 OAuth2TokenStorage.shared.token = receivedToken
                 delegate?.didAuthenticate(self)
             case .failure:
-                self?.showAuthErrorAlert()
+                showAuthErrorAlert()
             }
         }
     }
